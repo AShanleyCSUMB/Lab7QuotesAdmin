@@ -16,7 +16,6 @@ const dbConfig = {
   database: process.env.DB_NAME
 };
 
-// Fallback data for participation credit
 const fallbackAuthors = [
   { authorId: 1, firstName: 'Maya', lastName: 'Angelou' },
   { authorId: 2, firstName: 'Mark', lastName: 'Twain' }
@@ -24,24 +23,30 @@ const fallbackAuthors = [
 
 const fallbackCategories = [
   { categoryId: 1, categoryName: 'Inspirational' },
-  { categoryId: 2, categoryName: 'Humor' },
-  { categoryId: 3, categoryName: 'Life' }
+  { categoryId: 2, categoryName: 'Humor' }
 ];
 
 async function getConnection() {
   return mysql.createConnection(dbConfig);
 }
 
+async function runQuery(sql, params = []) {
+  const conn = await getConnection();
+  try {
+    const [rows] = await conn.query(sql, params);
+    return rows;
+  } finally {
+    await conn.end();
+  }
+}
+
 async function getAuthorsFromDb() {
   try {
-    const conn = await getConnection();
-    const [rows] = await conn.query(`
-      SELECT authorId, firstName, lastName
+    return await runQuery(`
+      SELECT authorId, firstName, lastName, dob, dod, sex, profession, country, biography, portrait
       FROM authors
       ORDER BY lastName, firstName
     `);
-    await conn.end();
-    return rows;
   } catch (err) {
     console.log('Could not load authors from DB, using fallback authors.');
     return fallbackAuthors;
@@ -50,47 +55,66 @@ async function getAuthorsFromDb() {
 
 async function getCategoriesFromDb() {
   try {
-    const conn = await getConnection();
-    const [rows] = await conn.query(`
+    return await runQuery(`
       SELECT categoryId, categoryName
       FROM categories
       ORDER BY categoryName
     `);
-    await conn.end();
-    return rows;
   } catch (err) {
     console.log('Could not load categories from DB, using fallback categories.');
     return fallbackCategories;
   }
 }
 
+async function ensureDeletedAuthorsTable() {
+  try {
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS authors_deleted (
+        authorId INT,
+        firstName VARCHAR(255),
+        lastName VARCHAR(255),
+        dob DATE,
+        dod DATE NULL,
+        sex VARCHAR(50),
+        profession VARCHAR(255),
+        country VARCHAR(255),
+        biography TEXT,
+        portrait TEXT,
+        deletedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (err) {
+    console.log('Could not create authors_deleted backup table.', err.message);
+  }
+}
+
 app.get('/', async (req, res) => {
   try {
-    let quotes = [];
-
-    try {
-      const conn = await getConnection();
-      const [rows] = await conn.query(`
-        SELECT 
-          q.quoteId,
-          q.quote,
-          c.categoryName,
-          a.firstName,
-          a.lastName
-        FROM quotes q
-        LEFT JOIN authors a ON q.authorId = a.authorId
-        LEFT JOIN categories c ON q.categoryId = c.categoryId
-        ORDER BY q.quoteId DESC
-      `);
-      await conn.end();
-      quotes = rows;
-    } catch (err) {
-      console.log('Could not load quotes from DB for home page.');
-    }
+    const quotes = await runQuery(`
+      SELECT 
+        q.quoteId,
+        q.quote,
+        c.categoryName,
+        a.firstName,
+        a.lastName
+      FROM quotes q
+      LEFT JOIN authors a ON q.authorId = a.authorId
+      LEFT JOIN categories c ON q.categoryId = c.categoryId
+      ORDER BY q.quoteId DESC
+    `).catch(() => []);
 
     res.render('home', { quotes });
   } catch (err) {
     res.status(500).send('Error loading home page.');
+  }
+});
+
+app.get('/authors', async (req, res) => {
+  try {
+    const authors = await getAuthorsFromDb();
+    res.render('authors', { authors });
+  } catch (err) {
+    res.status(500).send('Error loading authors page.');
   }
 });
 
@@ -127,17 +151,7 @@ app.post('/authors/new', async (req, res) => {
     portrait
   };
 
-  if (
-    !firstName ||
-    !lastName ||
-    !dob ||
-    !dod ||
-    !sex ||
-    !profession ||
-    !country ||
-    !biography ||
-    !portrait
-  ) {
+  if (!firstName || !lastName || !dob || !sex || !profession || !country || !biography || !portrait) {
     return res.render('addAuthor', {
       successMessage: null,
       errorMessage: 'Please complete all required fields.',
@@ -146,26 +160,14 @@ app.post('/authors/new', async (req, res) => {
   }
 
   try {
-    const conn = await getConnection();
-    await conn.query(
+    await runQuery(
       `
       INSERT INTO authors
       (firstName, lastName, dob, dod, sex, profession, country, biography, portrait)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [
-        firstName,
-        lastName,
-        dob,
-        dod,
-        sex,
-        profession,
-        country,
-        biography,
-        portrait
-      ]
+      [firstName, lastName, dob, dod || null, sex, profession, country, biography, portrait]
     );
-    await conn.end();
 
     res.render('addAuthor', {
       successMessage: 'Author added successfully.',
@@ -176,9 +178,117 @@ app.post('/authors/new', async (req, res) => {
     console.log(err);
     res.render('addAuthor', {
       successMessage: null,
-      errorMessage: 'Could not add author. Check your database/table names.',
+      errorMessage: 'Could not add author.',
       formData
     });
+  }
+});
+
+app.get('/authors/update/:id', async (req, res) => {
+  try {
+    const rows = await runQuery(
+      `SELECT * FROM authors WHERE authorId = ?`,
+      [req.params.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).send('Author not found.');
+    }
+
+    res.render('updateAuthor', {
+      author: rows[0],
+      successMessage: null,
+      errorMessage: null
+    });
+  } catch (err) {
+    res.status(500).send('Error loading author update form.');
+  }
+});
+
+app.post('/authors/update/:id', async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    dob,
+    dod,
+    sex,
+    profession,
+    country,
+    biography,
+    portrait
+  } = req.body;
+
+  const author = {
+    authorId: req.params.id,
+    firstName,
+    lastName,
+    dob,
+    dod,
+    sex,
+    profession,
+    country,
+    biography,
+    portrait
+  };
+
+  if (!firstName || !lastName || !dob || !sex || !profession || !country || !biography || !portrait) {
+    return res.render('updateAuthor', {
+      author,
+      successMessage: null,
+      errorMessage: 'Please complete all required fields.'
+    });
+  }
+
+  try {
+    await runQuery(
+      `
+      UPDATE authors
+      SET firstName = ?, lastName = ?, dob = ?, dod = ?, sex = ?, profession = ?, country = ?, biography = ?, portrait = ?
+      WHERE authorId = ?
+      `,
+      [firstName, lastName, dob, dod || null, sex, profession, country, biography, portrait, req.params.id]
+    );
+
+    const updatedRows = await runQuery(`SELECT * FROM authors WHERE authorId = ?`, [req.params.id]);
+
+    res.render('updateAuthor', {
+      author: updatedRows[0],
+      successMessage: 'Author updated successfully.',
+      errorMessage: null
+    });
+  } catch (err) {
+    console.log(err);
+    res.render('updateAuthor', {
+      author,
+      successMessage: null,
+      errorMessage: 'Could not update author.'
+    });
+  }
+});
+
+app.post('/authors/delete/:id', async (req, res) => {
+  try {
+    await ensureDeletedAuthorsTable();
+
+    const rows = await runQuery(`SELECT * FROM authors WHERE authorId = ?`, [req.params.id]);
+
+    if (rows.length) {
+      const a = rows[0];
+      await runQuery(
+        `
+        INSERT INTO authors_deleted
+        (authorId, firstName, lastName, dob, dod, sex, profession, country, biography, portrait)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [a.authorId, a.firstName, a.lastName, a.dob, a.dod, a.sex, a.profession, a.country, a.biography, a.portrait]
+      );
+    }
+
+    await runQuery(`DELETE FROM authors WHERE authorId = ?`, [req.params.id]);
+    res.redirect('/authors');
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('Could not delete author.');
   }
 });
 
@@ -197,10 +307,8 @@ app.get('/quotes/new', async (req, res) => {
 
 app.post('/quotes/new', async (req, res) => {
   const { quote, authorId, categoryId } = req.body;
-
   const authors = await getAuthorsFromDb();
   const categories = await getCategoriesFromDb();
-
   const formData = { quote, authorId, categoryId };
 
   if (!quote || quote.trim().length < 5) {
@@ -224,15 +332,10 @@ app.post('/quotes/new', async (req, res) => {
   }
 
   try {
-    const conn = await getConnection();
-    await conn.query(
-      `
-      INSERT INTO quotes (quote, authorId, categoryId)
-      VALUES (?, ?, ?)
-      `,
+    await runQuery(
+      `INSERT INTO quotes (quote, authorId, categoryId) VALUES (?, ?, ?)`,
       [quote.trim(), authorId, categoryId]
     );
-    await conn.end();
 
     res.render('newQuote', {
       authors,
@@ -246,25 +349,125 @@ app.post('/quotes/new', async (req, res) => {
     res.render('newQuote', {
       authors,
       categories,
-      errorMessage: 'Could not add quote. Check your database/table names.',
+      errorMessage: 'Could not add quote.',
       successMessage: null,
       formData
     });
   }
 });
 
-// Optional route if your assignment expects addQuotes.ejs by name
 app.get('/quotes', async (req, res) => {
+  try {
+    const quotes = await runQuery(`
+      SELECT
+        q.quoteId,
+        q.quote,
+        q.authorId,
+        q.categoryId,
+        a.firstName,
+        a.lastName,
+        c.categoryName
+      FROM quotes q
+      LEFT JOIN authors a ON q.authorId = a.authorId
+      LEFT JOIN categories c ON q.categoryId = c.categoryId
+      ORDER BY q.quoteId DESC
+    `);
+
+    res.render('quotes', { quotes });
+  } catch (err) {
+    res.status(500).send('Error loading quotes page.');
+  }
+});
+
+app.get('/quotes/update/:id', async (req, res) => {
+  try {
+    const [quote] = await Promise.all([
+      runQuery(
+        `
+        SELECT quoteId, quote, authorId, categoryId
+        FROM quotes
+        WHERE quoteId = ?
+        `,
+        [req.params.id]
+      ),
+      getAuthorsFromDb(),
+      getCategoriesFromDb()
+    ]);
+
+    const authors = await getAuthorsFromDb();
+    const categories = await getCategoriesFromDb();
+
+    if (!quote.length) {
+      return res.status(404).send('Quote not found.');
+    }
+
+    res.render('updateQuote', {
+      quoteItem: quote[0],
+      authors,
+      categories,
+      successMessage: null,
+      errorMessage: null
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('Error loading quote update form.');
+  }
+});
+
+app.post('/quotes/update/:id', async (req, res) => {
+  const { quote, authorId, categoryId } = req.body;
   const authors = await getAuthorsFromDb();
   const categories = await getCategoriesFromDb();
 
-  res.render('addQuotes', {
-    authors,
-    categories,
-    errorMessage: null,
-    successMessage: null,
-    formData: {}
-  });
+  const quoteItem = {
+    quoteId: req.params.id,
+    quote,
+    authorId,
+    categoryId
+  };
+
+  if (!quote || quote.trim().length < 5 || !authorId || !categoryId) {
+    return res.render('updateQuote', {
+      quoteItem,
+      authors,
+      categories,
+      successMessage: null,
+      errorMessage: 'Please complete all fields correctly.'
+    });
+  }
+
+  try {
+    await runQuery(
+      `
+      UPDATE quotes
+      SET quote = ?, authorId = ?, categoryId = ?
+      WHERE quoteId = ?
+      `,
+      [quote.trim(), authorId, categoryId, req.params.id]
+    );
+
+    const rows = await runQuery(
+      `SELECT quoteId, quote, authorId, categoryId FROM quotes WHERE quoteId = ?`,
+      [req.params.id]
+    );
+
+    res.render('updateQuote', {
+      quoteItem: rows[0],
+      authors,
+      categories,
+      successMessage: 'Quote updated successfully.',
+      errorMessage: null
+    });
+  } catch (err) {
+    console.log(err);
+    res.render('updateQuote', {
+      quoteItem,
+      authors,
+      categories,
+      successMessage: null,
+      errorMessage: 'Could not update quote.'
+    });
+  }
 });
 
 app.listen(port, () => {

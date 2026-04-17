@@ -1,11 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h1 class="mb-4">Update Author</h1>
+
+        <% if (successMessage) { %>
+          <div class="alert alert-success"><%= successMessage %></div>
+        <% } %>
+
+        <% if (errorMessage) { %>
+          <div class="alert alert-danger text-danger fw-semibold"><%= errorMessage %></div>
+        <% } %>
+
+        <form action="/authors/update/<%= author.authorId %>" method="POST" class="row g-3">
+          <div class="col-md-6">
+            <label for="firstName" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="firstName" name="firstName" value="<%= author.firstName || '' %>" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="lastName" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="lastName" name="lastName" value="<%= author.lastName || '' %>" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="dob" class="form-label">Date of Birth</label>
+            <input type="date" class="form-control" id="dob" name="dob" value="<%= author.dob ? new Date(author.dob).toISOString().split('T')[0] : '' %>" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="dod" class="form-label">Date of Death</label>
+            <input type="date" class="form-control" id="dod" name="dod" value="<%= author.dod ? new Date(author.dod).toISOString().split('T')[0] : '' %>">
+          </div>
+
+          <div class="col-md-6">
+            <label for="profession" class="form-label">Profession</label>
+            <input type="text" class="form-control" id="profession" name="profession" value="<%= author.profession || '' %>" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="country" class="form-label">Country</label>
+            <input type="text" class="form-control" id="country" name="country" value="<%= author.country || '' %>" required>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label d-block">Sex</label>
+
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="sex" id="female" value="Female" <%= author.sex === 'Female' ? 'checked' : '' %> required>
+              <label class="form-check-label" for="female">Female</label>
+            </div>
+
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="sex" id="male" value="Male" <%= author.sex === 'Male' ? 'checked' : '' %> required>
+              <label class="form-check-label" for="male">Male</label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label for="biography" class="form-label">Biography</label>
+            <textarea class="form-control" id="biography" name="biography" rows="4" required><%= author.biography || '' %></textarea>
+          </div>
+
+          <div class="col-12">
+            <label for="portrait" class="form-label">Picture URL</label>
+            <textarea class="form-control" id="portrait" name="portrait" rows="2" required><%= author.portrait || '' %></textarea>
+          </div>
+
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Author</button>
+            <a href="/authors" class="btn btn-outline-secondary">Back to Authors</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

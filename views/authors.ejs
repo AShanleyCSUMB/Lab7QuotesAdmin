@@ -1,11 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Authors</h1>
+  <a href="/authors/new" class="btn btn-primary">Add Author</a>
+</div>
+
+<% if (!authors || authors.length === 0) { %>
+  <div class="alert alert-secondary">No authors found.</div>
+<% } else { %>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle bg-white">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Profession</th>
+          <th>Country</th>
+          <th>Sex</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% authors.forEach(author => { %>
+          <tr>
+            <td><%= author.authorId %></td>
+            <td><%= author.firstName %> <%= author.lastName %></td>
+            <td><%= author.profession || '' %></td>
+            <td><%= author.country || '' %></td>
+            <td><%= author.sex || '' %></td>
+            <td class="d-flex gap-2">
+              <a href="/authors/update/<%= author.authorId %>" class="btn btn-sm btn-outline-primary">Update</a>
+              <form method="POST" action="/authors/delete/<%= author.authorId %>" onsubmit="return confirm('Delete this author? A backup copy will be saved first.');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

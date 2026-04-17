@@ -1,11 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h1 class="mb-4">Update Quote</h1>
+
+        <% if (successMessage) { %>
+          <div class="alert alert-success"><%= successMessage %></div>
+        <% } %>
+
+        <% if (errorMessage) { %>
+          <div class="alert alert-danger text-danger fw-semibold"><%= errorMessage %></div>
+        <% } %>
+
+        <form method="POST" action="/quotes/update/<%= quoteItem.quoteId %>">
+          <div class="mb-3">
+            <label class="form-label">Quote</label>
+            <textarea name="quote" class="form-control" rows="4" required><%= quoteItem.quote || '' %></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Author</label>
+            <select name="authorId" class="form-select" required>
+              <option value="">Choose an author</option>
+              <% authors.forEach(author => { %>
+                <option
+                  value="<%= author.authorId %>"
+                  <%= String(quoteItem.authorId) === String(author.authorId) ? 'selected' : '' %>
+                >
+                  <%= author.firstName %> <%= author.lastName %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select name="categoryId" class="form-select" required>
+              <option value="">Choose a category</option>
+              <% categories.forEach(category => { %>
+                <option
+                  value="<%= category.categoryId %>"
+                  <%= String(quoteItem.categoryId) === String(category.categoryId) ? 'selected' : '' %>
+                >
+                  <%= category.categoryName %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary">Update Quote</button>
+            <a href="/quotes" class="btn btn-outline-secondary">Back to Quotes</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
