@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h1 class="mb-4">Add Quote</h1>
+
+        <% if (successMessage) { %>
+          <div class="alert alert-success"><%= successMessage %></div>
+        <% } %>
+
+        <% if (errorMessage) { %>
+          <div class="alert alert-danger text-danger fw-semibold"><%= errorMessage %></div>
+        <% } %>
+
+        <form method="POST" action="/quotes/new">
+          <div class="mb-3">
+            <label class="form-label">Quote</label>
+            <textarea
+              name="quote"
+              class="form-control"
+              rows="4"
+              required
+            ><%= formData.quote || '' %></textarea>
+            <div class="form-text">Quote must be at least 5 characters long.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Author</label>
+            <select name="authorId" class="form-select" required>
+              <option value="">Choose an author</option>
+              <% authors.forEach(author => { %>
+                <option
+                  value="<%= author.authorId %>"
+                  <%= String(formData.authorId) === String(author.authorId) ? 'selected' : '' %>
+                >
+                  <%= author.firstName %> <%= author.lastName %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select name="categoryId" class="form-select" required>
+              <option value="">Choose a category</option>
+              <% categories.forEach(category => { %>
+                <option
+                  value="<%= category.categoryId %>"
+                  <%= String(formData.categoryId) === String(category.categoryId) ? 'selected' : '' %>
+                >
+                  <%= category.categoryName %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <button class="btn btn-primary">Save Quote</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

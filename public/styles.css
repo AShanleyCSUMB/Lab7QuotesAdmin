@@ -1,0 +1,26 @@
+body {
+  background: #f4f7fb;
+}
+
+.hero-box {
+  background: linear-gradient(135deg, #1f3c88, #39a0ed);
+  color: white;
+}
+
+.card {
+  overflow: hidden;
+}
+
+.quote-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+textarea.form-control {
+  resize: vertical;
+}
+
+footer {
+  background: #fff;
+}

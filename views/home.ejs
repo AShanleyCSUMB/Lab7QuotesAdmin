@@ -1,0 +1,44 @@
+<%- include('partials/header') %>
+
+<div class="p-4 p-md-5 mb-4 rounded-4 hero-box">
+  <div class="col-lg-8">
+    <h1 class="display-5 fw-bold">Quote Finder Admin Panel</h1>
+    <p class="lead mb-4">
+      Add authors, manage quotes, and browse saved content.
+    </p>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/authors/new" class="btn btn-primary btn-lg">Add Author</a>
+      <a href="/quotes/new" class="btn btn-outline-light btn-lg">Add Quote</a>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2 class="mb-3">Recent Quotes</h2>
+
+  <% if (!quotes || quotes.length === 0) { %>
+    <div class="alert alert-secondary">
+      No quotes found yet. Add one from the admin page.
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+      <% quotes.forEach(q => { %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm border-0 rounded-4">
+            <div class="card-body">
+              <p class="quote-text">“<%= q.quote %>”</p>
+              <p class="mb-1 fw-semibold">
+                <%= q.firstName || 'Unknown' %> <%= q.lastName || 'Author' %>
+              </p>
+              <span class="badge text-bg-dark">
+                <%= q.categoryName || 'Uncategorized' %>
+              </span>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>
