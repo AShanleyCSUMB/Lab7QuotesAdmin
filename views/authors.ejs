@@ -1,44 +1,42 @@
 <%- include('partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="mb-0">Authors</h1>
-  <a href="/authors/new" class="btn btn-primary">Add Author</a>
-</div>
+<h1>Authors</h1>
+
+<p><a href="/authors/new">Add Author</a></p>
 
 <% if (!authors || authors.length === 0) { %>
-  <div class="alert alert-secondary">No authors found.</div>
+  <p>No authors found.</p>
 <% } else { %>
-  <div class="table-responsive">
-    <table class="table table-bordered table-hover align-middle bg-white">
-      <thead class="table-dark">
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Profession</th>
+        <th>Country</th>
+        <th>Sex</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% authors.forEach(author => { %>
         <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Profession</th>
-          <th>Country</th>
-          <th>Sex</th>
-          <th>Actions</th>
+          <td><%= author.authorId %></td>
+          <td><%= author.firstName %> <%= author.lastName %></td>
+          <td><%= author.profession || '' %></td>
+          <td><%= author.country || '' %></td>
+          <td><%= author.sex || '' %></td>
+          <td>
+            <a href="/authors/update/<%= author.authorId %>">Update</a>
+
+            <form method="POST" action="/authors/delete/<%= author.authorId %>" style="display:inline;">
+              <button type="submit" onclick="return confirm('Delete this author?');">Delete</button>
+            </form>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        <% authors.forEach(author => { %>
-          <tr>
-            <td><%= author.authorId %></td>
-            <td><%= author.firstName %> <%= author.lastName %></td>
-            <td><%= author.profession || '' %></td>
-            <td><%= author.country || '' %></td>
-            <td><%= author.sex || '' %></td>
-            <td class="d-flex gap-2">
-              <a href="/authors/update/<%= author.authorId %>" class="btn btn-sm btn-outline-primary">Update</a>
-              <form method="POST" action="/authors/delete/<%= author.authorId %>" onsubmit="return confirm('Delete this author? A backup copy will be saved first.');">
-                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
+      <% }) %>
+    </tbody>
+  </table>
 <% } %>
 
 <%- include('partials/footer') %>

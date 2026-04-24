@@ -1,0 +1,25 @@
+<%- include('partials/header') %>
+
+<h1>Admin Login</h1>
+
+<p>Sign in to access the Famous Quotes admin pages.</p>
+
+<% if (errorMessage) { %>
+  <p><%= errorMessage %></p>
+<% } %>
+
+<form method="POST" action="/login">
+  <div>
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" required />
+  </div>
+
+  <div>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required />
+  </div>
+
+  <button type="submit">Login</button>
+</form>
+
+<%- include('partials/footer') %>

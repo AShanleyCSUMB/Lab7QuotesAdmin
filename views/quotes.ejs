@@ -1,58 +1,47 @@
 <%- include('partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-  <div>
-    <h1 class="mb-1">Quotes</h1>
-    <p class="text-muted mb-0">Update or delete saved quotes.</p>
-  </div>
-  <a href="/quotes/new" class="btn btn-primary">Add Quote</a>
-</div>
+<h1>Quotes</h1>
+
+<p>Update or delete saved quotes.</p>
+<p><a href="/quotes/new">Add Quote</a></p>
 
 <% if (successMessage) { %>
-  <div class="alert alert-success"><%= successMessage %></div>
+  <p><%= successMessage %></p>
 <% } %>
 
 <% if (errorMessage) { %>
-  <div class="alert alert-danger"><%= errorMessage %></div>
+  <p><%= errorMessage %></p>
 <% } %>
 
-<div class="card shadow-sm border-0 rounded-4">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
+<% if (!quotes || quotes.length === 0) { %>
+  <p>No quotes found.</p>
+<% } else { %>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Quote</th>
+        <th>Author</th>
+        <th>Category</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% quotes.forEach(item => { %>
         <tr>
-          <th>Quote</th>
-          <th>Author</th>
-          <th>Category</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (!quotes || quotes.length === 0) { %>
-          <tr>
-            <td colspan="4" class="text-center py-4 text-muted">No quotes found.</td>
-          </tr>
-        <% } %>
+          <td>“<%= item.quote %>”</td>
+          <td><%= item.firstName || 'Unknown' %> <%= item.lastName || '' %></td>
+          <td><%= item.categoryName || 'Uncategorized' %></td>
+          <td>
+            <a href="/quotes/update/<%= item.quoteId %>">Update</a>
 
-        <% quotes.forEach(item => { %>
-          <tr>
-            <td>“<%= item.quote %>”</td>
-            <td><%= item.firstName || 'Unknown' %> <%= item.lastName || '' %></td>
-            <td><%= item.categoryName || 'Uncategorized' %></td>
-            <td>
-              <div class="d-flex justify-content-end gap-2 flex-wrap">
-                <a href="/quotes/update?quoteId=<%= item.quoteId %>" class="btn btn-sm btn-outline-primary">Update</a>
-                <form action="/quotes/delete" method="POST" class="m-0" onsubmit="return confirm('Delete this quote?');">
-                  <input type="hidden" name="quoteId" value="<%= item.quoteId %>">
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</div>
+            <form method="POST" action="/quotes/delete/<%= item.quoteId %>" style="display:inline;">
+              <button type="submit" onclick="return confirm('Delete this quote?');">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
 
 <%- include('partials/footer') %>
