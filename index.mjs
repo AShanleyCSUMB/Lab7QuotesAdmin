@@ -488,6 +488,33 @@ app.post('/quotes/update/:id', async (req, res) => {
   }
 });
 
+app.get('/login', (req, res) => {
+  if (req.session && req.session.isAuthenticated) {
+    return res.redirect('/authors');
+  }
+
+  res.render('login', {
+    errorMessage: null
+  });
+});
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'password';
+
+  if (username === adminUsername && password === adminPassword) {
+    req.session.isAuthenticated = true;
+    req.session.username = username;
+    return res.redirect('/authors');
+  }
+
+  res.status(401).render('login', {
+    errorMessage: 'Invalid username or password.'
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
