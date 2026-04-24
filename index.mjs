@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import session from 'express-session';
 import mysql from 'mysql2/promise';
 
 const app = express();
