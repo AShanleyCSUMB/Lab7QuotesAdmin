@@ -385,22 +385,16 @@ app.post('/quotes/new', requireAuth, async (req, res) => {
 app.get('/quotes', requireAuth, async (req, res) => {
   try {
     const quotes = await runQuery(`
-      SELECT
-        q.quoteId,
-        q.quote,
-        q.authorId,
-        q.categoryId,
-        a.firstName,
-        a.lastName,
-        c.categoryName
+      SELECT q.quoteId, q.quote, q.authorId, q.categoryId,
+             a.firstName, a.lastName, c.categoryName
       FROM quotes q
       LEFT JOIN authors a ON q.authorId = a.authorId
       LEFT JOIN categories c ON q.categoryId = c.categoryId
       ORDER BY q.quoteId DESC
     `);
-
     res.render('quotes', { quotes });
   } catch (err) {
+    console.log('Quotes route error:', err);
     res.status(500).send('Error loading quotes page.');
   }
 });
