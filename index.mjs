@@ -44,6 +44,13 @@ const fallbackCategories = [
   { categoryId: 2, categoryName: 'Humor' }
 ];
 
+function requireAuth(req, res, next) {
+  if (!req.session || !req.session.isAuthenticated) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
 async function getConnection() {
   return mysql.createConnection(dbConfig);
 }
@@ -127,7 +134,7 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/authors', async (req, res) => {
+app.get('/authors', requireAuth, async (req, res) => {
   try {
     const authors = await getAuthorsFromDb();
     res.render('authors', { authors });
@@ -136,7 +143,7 @@ app.get('/authors', async (req, res) => {
   }
 });
 
-app.get('/authors/new', (req, res) => {
+app.get('/authors/new', requireAuth, (req, res) => {
   res.render('addAuthor', {
     successMessage: null,
     errorMessage: null,
@@ -144,7 +151,7 @@ app.get('/authors/new', (req, res) => {
   });
 });
 
-app.post('/authors/new', async (req, res) => {
+app.post('/authors/new', requireAuth, async (req, res) => {
   const {
     firstName,
     lastName,
@@ -202,7 +209,7 @@ app.post('/authors/new', async (req, res) => {
   }
 });
 
-app.get('/authors/update/:id', async (req, res) => {
+app.get('/authors/update/:id', requireAuth, async (req, res) => {
   try {
     const rows = await runQuery(
       `SELECT * FROM authors WHERE authorId = ?`,
@@ -223,7 +230,7 @@ app.get('/authors/update/:id', async (req, res) => {
   }
 });
 
-app.post('/authors/update/:id', async (req, res) => {
+app.post('/authors/update/:id', requireAuth, async (req, res) => {
   const {
     firstName,
     lastName,
@@ -284,7 +291,7 @@ app.post('/authors/update/:id', async (req, res) => {
   }
 });
 
-app.post('/authors/delete/:id', async (req, res) => {
+app.post('/authors/delete/:id', requireAuth, async (req, res) => {
   try {
     await ensureDeletedAuthorsTable();
 
@@ -310,7 +317,7 @@ app.post('/authors/delete/:id', async (req, res) => {
   }
 });
 
-app.get('/quotes/new', async (req, res) => {
+app.get('/quotes/new', requireAuth, async (req, res) => {
   const authors = await getAuthorsFromDb();
   const categories = await getCategoriesFromDb();
 
@@ -323,7 +330,7 @@ app.get('/quotes/new', async (req, res) => {
   });
 });
 
-app.post('/quotes/new', async (req, res) => {
+app.post('/quotes/new', requireAuth, async (req, res) => {
   const { quote, authorId, categoryId } = req.body;
   const authors = await getAuthorsFromDb();
   const categories = await getCategoriesFromDb();
@@ -374,7 +381,7 @@ app.post('/quotes/new', async (req, res) => {
   }
 });
 
-app.get('/quotes', async (req, res) => {
+app.get('/quotes', requireAuth, async (req, res) => {
   try {
     const quotes = await runQuery(`
       SELECT
@@ -397,7 +404,7 @@ app.get('/quotes', async (req, res) => {
   }
 });
 
-app.get('/quotes/update/:id', async (req, res) => {
+app.get('/quotes/update/:id', requireAuth, async (req, res) => {
   try {
     const [quote] = await Promise.all([
       runQuery(
@@ -432,7 +439,7 @@ app.get('/quotes/update/:id', async (req, res) => {
   }
 });
 
-app.post('/quotes/update/:id', async (req, res) => {
+app.post('/quotes/update/:id', requireAuth, async (req, res) => {
   const { quote, authorId, categoryId } = req.body;
   const authors = await getAuthorsFromDb();
   const categories = await getCategoriesFromDb();
@@ -488,6 +495,16 @@ app.post('/quotes/update/:id', async (req, res) => {
   }
 });
 
+app.post('/quotes/delete/:id', requireAuth, async (req, res) => {
+  try {
+    await runQuery('DELETE FROM quotes WHERE quoteId = ?', [req.params.id]);
+    res.redirect('/quotes');
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('Could not delete quote.');
+  }
+});
+
 app.get('/login', (req, res) => {
   if (req.session && req.session.isAuthenticated) {
     return res.redirect('/authors');
@@ -498,20 +515,34 @@ app.get('/login', (req, res) => {
   });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'password';
+  try {
+    const rows = await runQuery(
+      'SELECT * FROM admin_users WHERE username = ? AND password = ?',
+      [username, password]
+    );
 
-  if (username === adminUsername && password === adminPassword) {
+    if (rows.length === 0) {
+      return res.status(401).render('login', { errorMessage: 'Invalid username or password.' });
+    }
+
     req.session.isAuthenticated = true;
-    req.session.username = username;
-    return res.redirect('/authors');
+    req.session.username = rows[0].username;
+    res.redirect('/authors');
+  } catch (err) {
+    console.log(err);
+    res.status(500).render('login', { errorMessage: 'Login error.' });
   }
+});
 
-  res.status(401).render('login', {
-    errorMessage: 'Invalid username or password.'
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).send('Could not log out.');
+    }
+    res.redirect('/login');
   });
 });
 
