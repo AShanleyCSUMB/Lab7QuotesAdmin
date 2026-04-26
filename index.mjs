@@ -420,9 +420,6 @@ app.get('/quotes/update/:id', requireAuth, async (req, res) => {
       getCategoriesFromDb()
     ]);
 
-    const authors = await getAuthorsFromDb();
-    const categories = await getCategoriesFromDb();
-
     if (!quoteRows.length) {
       return res.status(404).send('Quote not found.');
     }
