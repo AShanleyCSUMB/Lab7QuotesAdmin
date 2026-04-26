@@ -22,6 +22,7 @@ app.use(
 
 app.use((req, res, next) => {
   res.locals.isLoggedIn = !!req.session.isAuthenticated;
+  res.locals.username = req.session.username || null;
   next();
 });
 
@@ -406,7 +407,7 @@ app.get('/quotes', requireAuth, async (req, res) => {
 
 app.get('/quotes/update/:id', requireAuth, async (req, res) => {
   try {
-    const [quote] = await Promise.all([
+    const [quoteRows, authors, categories] = await Promise.all([
       runQuery(
         `
         SELECT quoteId, quote, authorId, categoryId
@@ -422,12 +423,12 @@ app.get('/quotes/update/:id', requireAuth, async (req, res) => {
     const authors = await getAuthorsFromDb();
     const categories = await getCategoriesFromDb();
 
-    if (!quote.length) {
+    if (!quoteRows.length) {
       return res.status(404).send('Quote not found.');
     }
 
     res.render('updateQuote', {
-      quoteItem: quote[0],
+      quoteItem: quoteRows[0],
       authors,
       categories,
       successMessage: null,

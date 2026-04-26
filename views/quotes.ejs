@@ -32,10 +32,10 @@
           <td><%= item.firstName || 'Unknown' %> <%= item.lastName || '' %></td>
           <td><%= item.categoryName || 'Uncategorized' %></td>
           <td>
-            <a href="/quotes/update/<%= item.quoteId %>">Update</a>
+            <a href="/quotes/update/<%= item.quoteId %>" class="btn btn-warning btn-sm">Update</a>
 
             <form action="/quotes/delete/<%= item.quoteId %>" method="POST" style="display:inline;">
-              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this quote?');">Delete</button>
             </form>
           </td>
         </tr>
