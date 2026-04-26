@@ -392,7 +392,11 @@ app.get('/quotes', requireAuth, async (req, res) => {
       LEFT JOIN categories c ON q.categoryId = c.categoryId
       ORDER BY q.quoteId DESC
     `);
-    res.render('quotes', { quotes });
+    res.render('quotes', {
+      quotes,
+      successMessage: null,
+      errorMessage: null
+    });
   } catch (err) {
     console.log('Quotes route error:', err);
     res.status(500).send('Error loading quotes page.');
